@@ -1,0 +1,1138 @@
+// Classify each year to get snapshot classification that can be combined with CCDC tool
+// Goal is to more accurate detect change pixels
+
+// Oct 16th 2023 - modified for all remaining watersheds - template
+
+// Courtney Di Vittorio
+
+// get outer grid - BARATARIA SHOWN HERE
+/////////////////////////////////////// MODIFY FOR EACH WATERSHED ///////////////////////
+// upper left
+var gridr1c1 = ee.Geometry.Rectangle(-91.4008,29.968,-91.1721,30.214);
+// lower right
+var gridr5c9 = ee.Geometry.Rectangle(-89.5713,28.9842,-89.3426,29.2301);
+
+// full area - take first and last coordinates from upper left and middle coordinates from lower right
+var fullAOI =  ee.Geometry.Rectangle(-91.4008,28.9842,-89.3426,30.214);
+
+// check
+Map.centerObject(fullAOI );
+Map.addLayer(fullAOI ,{color: 'red'},'Area To Process');
+
+// use my modified tools for creating a landsat collection 
+var utils = require('users/cdivittorio/ccdcUtilsModified:ccdcUtilities/api');
+
+
+// use normalized indices only and use median, max, and min
+// import another users' tools
+var temporalSegmentation = require('users/wiell/temporalSegmentation:temporalSegmentation')
+
+//import training data for your watershed 
+//////////////////////////////////////////// MODIFY FOR EACH WATERSHED /////////////
+var trainData = ee.FeatureCollection('projects/ee-cdivittorio/assets/barataria/trainingBARfull'); 
+print(trainData.first())
+
+
+// create parameters for getLandsat 
+var landsatParams = {
+  collection: 2,
+  start: '1985-01-01',
+  end: '2023-10-15',
+  StudyRegion: fullAOI
+}
+
+// get landsat image collection for study region using my code
+// select bands of interest only
+var filteredLandsat = utils.Inputs.getLandsat(landsatParams) 
+    .filterBounds(landsatParams.StudyRegion)
+    .filterDate(landsatParams.start, landsatParams.end)
+   // .select(['GREEN','RED','NIR','SWIR1','SWIR2','NDVI',
+   // 'NDWIa','MNDWI','AEWInsh','NPCRI','BSI','EVI'
+   .select(['NDVI','NDWIa','MNDWI','NPCRI','BSI','EVI'])
+
+
+// filter for each year and create separate image collections, get median, max, and min
+var filteredLandsat1985 = annualSummary(filteredLandsat,'1985-01-01','1985-12-31');
+var filteredLandsat1986 = annualSummary(filteredLandsat,'1986-01-01','1986-12-31');
+var filteredLandsat1987 = annualSummary(filteredLandsat,'1987-01-01','1987-12-31');
+var filteredLandsat1988 = annualSummary(filteredLandsat,'1988-01-01','1988-12-31');
+var filteredLandsat1989 = annualSummary(filteredLandsat,'1989-01-01','1989-12-31');
+var filteredLandsat1990 = annualSummary(filteredLandsat,'1990-01-01','1990-12-31');
+var filteredLandsat1991 = annualSummary(filteredLandsat,'1991-01-01','1991-12-31');
+var filteredLandsat1992 = annualSummary(filteredLandsat,'1992-01-01','1992-12-31');
+var filteredLandsat1993 = annualSummary(filteredLandsat,'1993-01-01','1993-12-31');
+var filteredLandsat1994 = annualSummary(filteredLandsat,'1994-01-01','1994-12-31');
+var filteredLandsat1995 = annualSummary(filteredLandsat,'1995-01-01','1995-12-31');
+var filteredLandsat1996 = annualSummary(filteredLandsat,'1996-01-01','1996-12-31');
+var filteredLandsat1997 = annualSummary(filteredLandsat,'1997-01-01','1997-12-31');
+var filteredLandsat1998 = annualSummary(filteredLandsat,'1998-01-01','1998-12-31');
+var filteredLandsat1999 = annualSummary(filteredLandsat,'1999-01-01','1999-12-31');
+var filteredLandsat2000 = annualSummary(filteredLandsat,'2000-01-01','2000-12-31');
+var filteredLandsat2001 = annualSummary(filteredLandsat,'2001-01-01','2001-12-31');
+var filteredLandsat2002 = annualSummary(filteredLandsat,'2002-01-01','2002-12-31');
+var filteredLandsat2003 = annualSummary(filteredLandsat,'2003-01-01','2003-12-31');
+var filteredLandsat2004 = annualSummary(filteredLandsat,'2004-01-01','2004-12-31');
+var filteredLandsat2005 = annualSummary(filteredLandsat,'2005-01-01','2005-12-31');
+var filteredLandsat2006 = annualSummary(filteredLandsat,'2006-01-01','2006-12-31');
+var filteredLandsat2007 = annualSummary(filteredLandsat,'2007-01-01','2007-12-31');
+var filteredLandsat2008 = annualSummary(filteredLandsat,'2008-01-01','2008-12-31');
+var filteredLandsat2009 = annualSummary(filteredLandsat,'2009-01-01','2009-12-31');
+var filteredLandsat2010 = annualSummary(filteredLandsat,'2010-01-01','2010-12-31');
+var filteredLandsat2011 = annualSummary(filteredLandsat,'2011-01-01','2011-12-31');
+var filteredLandsat2012 = annualSummary(filteredLandsat,'2012-01-01','2012-12-31');
+var filteredLandsat2013 = annualSummary(filteredLandsat,'2013-01-01','2013-12-31');
+var filteredLandsat2014 = annualSummary(filteredLandsat,'2014-01-01','2014-12-31');
+var filteredLandsat2015 = annualSummary(filteredLandsat,'2015-01-01','2015-12-31');
+var filteredLandsat2016 = annualSummary(filteredLandsat,'2016-01-01','2016-12-31');
+var filteredLandsat2017 = annualSummary(filteredLandsat,'2017-01-01','2017-12-31');
+var filteredLandsat2018 = annualSummary(filteredLandsat,'2018-01-01','2018-12-31');
+var filteredLandsat2019 = annualSummary(filteredLandsat,'2019-01-01','2019-12-31');
+var filteredLandsat2020 = annualSummary(filteredLandsat,'2020-01-01','2020-12-31');
+var filteredLandsat2021 = annualSummary(filteredLandsat,'2021-01-01','2021-12-31');
+var filteredLandsat2022 = annualSummary(filteredLandsat,'2022-01-01','2022-12-31');
+var filteredLandsat2023 = annualSummary(filteredLandsat,'2023-01-01','2023-12-31');
+
+
+// filter training data by date
+var trainData1996 = trainData.filter("date == '1996-06-01'");
+//print('training 1996',trainData1996) // NEED TO GET 1996 ONLY
+var trainData2001 = trainData.filter("date == '2001-06-01'");
+var trainData2006 = trainData.filter("date == '2006-06-01'");
+var trainData2011 = trainData.filter("date == '2011-06-01'"); 
+var trainData2016 = trainData.filter("date == '2016-06-01'"); 
+
+// get landsat data associated with each training year
+var samples1996 = filteredLandsat1996.sampleRegions({
+  collection: trainData1996,
+  //geometries: true,
+  scale: 30,
+  projection: 'EPSG:4326',
+  //numPixels: 1600,
+  tileScale: 4,
+});
+print('sampled training',samples1996)
+
+var samples2001 = filteredLandsat2001.sampleRegions({
+  collection: trainData2001,
+  scale: 30,
+  projection: 'EPSG:4326',
+  tileScale: 4,
+});
+print('sampled training',samples2001)
+
+var samples2006 = filteredLandsat2006.sampleRegions({
+  collection: trainData2006,
+  scale: 30,
+  projection: 'EPSG:4326',
+  tileScale: 4,
+});
+print('sampled training',samples2006
+)
+var samples2011 = filteredLandsat2011.sampleRegions({
+  collection: trainData2011,
+  scale: 30,
+  projection: 'EPSG:4326',
+  tileScale: 4,
+});
+print('sampled training',samples2011)
+
+var samples2016 = filteredLandsat2016.sampleRegions({
+  collection: trainData2016,
+  scale: 30,
+  projection: 'EPSG:4326',
+  tileScale: 4,
+});
+print('sampled training',samples2016)
+
+
+var trainingData = samples1996.merge(samples2001).merge(samples2006)
+  .merge(samples2011).merge(samples2016);
+  
+print('training data merged',trainingData)
+var inputFeatures = trainingData.first().propertyNames();
+print('inputFeatures',inputFeatures)  
+
+
+// get rid of features not used in classifier
+var inputFeaturesRed = inputFeatures.remove('system:index')
+var inputFeaturesRed = inputFeaturesRed.remove('date')
+print('inputFeaturesRed',inputFeaturesRed)
+
+// define classifier
+var classifier = ee.Classifier.smileRandomForest(150) //number of trees 
+
+// variable that determines class
+var classProperty = 'type';
+
+// Train the classifier 
+var trainedModel = classifier.train({
+    features: trainingData,
+    classProperty: classProperty,
+    inputProperties: inputFeaturesRed
+  })
+
+
+
+
+var date = '1985';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1985, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+var date = '1986';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1986, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+  var date = '1987';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1987, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+  var date = '1988';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1988, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+  var date = '1989';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1989, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+  var date = '1990';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1990, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+  var date = '1991';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1991, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+  var date = '1992';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1992, trainedModel)
+ .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+  var date = '1993';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1993, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+  var date = '1994';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1994, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+  var date = '1995';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1995, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+ 
+  
+var date = '1996';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1996, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })    
+  
+var date = '1997';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1997, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+var date = '1998';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1998, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '1999';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat1999, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+     
+var date = '2000';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2000, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2001';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2001, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+var date = '2002';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2002, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+  
+
+var date = '2003';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2003, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2004';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2004, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2005';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2005, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2006';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2006, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2007';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2007, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2008';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2008, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2009';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2009, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+var date = '2010';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2010, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+var date = '2011';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2011, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2012';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2012, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2013';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2013, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date  
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2014';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2014, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date  
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2015';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2015, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+  
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2016';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2016, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2017';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2017, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+
+var date = '2018';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2018, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+
+var date = '2019';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2019, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+  
+  var date = '2020';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2020, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+  
+  var date = '2021';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2021, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+  
+  var date = '2022';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2022, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+  
+  var date = '2023';
+// use function to get classification probabilities
+var classificationProbsImgs = classify(filteredLandsat2023, trainedModel)
+  .select(['probability_1','probability_2','probability_3','probability_4','probability_5'])
+
+// export
+var descriptionOut = 'classProbsMedMinMax-full' + date 
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classificationProbsImgs,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: fullAOI,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports'
+  })     
+  
+
+    
+/*
+// function that converts segment to image - //////////// MODIFY WHEN CHANGING BANDS //////////////////////////////
+function segmentToImage(segment) {
+  var image = segment.toImage() 
+  var rmse = image.select('.*_rmse')
+  //var ndfiCoefs = segment.coefs('ndfi')
+  //add band coefs as well
+  //bands
+  var blueCoefs = segment.coefs('BLUE')
+  var greenCoefs = segment.coefs('GREEN')  
+  var redCoefs = segment.coefs('RED')
+  var nirCoefs = segment.coefs('NIR')
+  var swir1Coefs = segment.coefs('SWIR1')
+  var swir2Coefs = segment.coefs('SWIR2')
+  // indices
+  var ndviCoefs = segment.coefs('NDVI')
+  var mndwiCoefs = segment.coefs('MNDWI')
+  
+  var ndwiCoefs = segment.coefs('NDWIa')
+  var aewCoefs = segment.coefs('AEWInsh')
+  var bsiCoefs = segment.coefs('BSI')
+  var eviCoefs = segment.coefs('EVI')
+  var npcriCoefs = segment.coefs('NPCRI')
+  
+  //var slice = segment.slice({strategy: 'closest'}) // I think this is value on closest date, try removing
+  //var normalizedDifferences = segments.combinePairwise(slice, normalizedDifference, '_nd')
+  var densityObs = image.expression('i.numObs / (i.tEnd - i.tStart)', {i: image})
+    .rename('densityObs')
+  return ee.Image([rmse, blueCoefs, greenCoefs, redCoefs, nirCoefs, swir1Coefs, swir2Coefs, 
+    ndviCoefs, mndwiCoefs, ndwiCoefs, aewCoefs, 
+    bsiCoefs, eviCoefs, npcriCoefs, densityObs])
+  //return ee.Image([rmse, blueCoefs, greenCoefs, redCoefs, nirCoefs, swir1Coefs, swir2Coefs, 
+  //ndviCoefs, mndwiCoefs, densityObs])
+}
+
+// function that calculates normalized differences
+function normalizedDifference(img1, img2) {
+  return img1.expression('(img1 - img2) / (img1 + img2)', {
+    img1: img1, 
+    img2: img2
+  })
+}
+
+// function that samples training data from image
+function sample(segments, referenceData, resolution) {
+  var trainingData = referenceData.map(sampleFeature).flatten()
+  var bandOrder = trainingData.first().propertyNames().slice(1)
+  return trainingData.set('band_order', bandOrder)
+  
+  // for each training point
+  function sampleFeature(feature) {
+    var segment = segments.findByDate(ee.Date(feature.get('date')), 'closest')
+    return segmentToImage(segment)
+      .sample({
+        region: feature.geometry(),
+        scale: resolution,
+        numPixels: 1
+      })
+      .map(
+        function (sample) {
+          return ee.Feature(sample)
+            .copyProperties({
+              source: ee.Feature(feature), 
+              exclude: ['date'] //took out to export and correct GEE training info
+            })
+        }
+      )
+  }
+}
+*/
+
+// function that reads in image of predictors for a particular date, 
+// gets classification probability for class it was classified to, 
+function classify(image, classifier) {
+  var classes = ee.Array(classifier.explain().get('classes'))
+  var multiProbability = image.classify(classifier.setOutputMode('MULTIPROBABILITY'))
+  var classProbability = multiProbability
+    .arrayReduce(ee.Reducer.max(), [0])
+    .arrayFlatten([
+      ['class_probability']
+    ])
+  var classValue = ee.Image(classes)
+    .arrayMask(multiProbability.eq(classProbability))
+    .arrayFlatten([
+      ['class']
+    ])
+  var probabilityBandNames = classes
+    .toList()
+    .map(function(classValue) {
+      return ee.String('probability_').cat(ee.Number(classValue).format())
+    })
+  var probabilities = multiProbability.arrayFlatten([probabilityBandNames])
+  return classValue
+    .addBands(classProbability)
+    .addBands(probabilities)
+}
+
+function classifySimple(classifier, date, resolution) {
+  var image = segmentToImage(segments.findByDate(date, 'closest'))
+  
+  var classification = image
+    .classify(classifier.setOutputMode('CLASSIFICATION'))
+    
+  var description = 'classification-' + date
+  
+  print('classified image',classification)
+  
+  var projection = classificationProbsImgsRed.select(0).projection().getInfo();
+  //print('projection info',projection)
+  Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classification,
+    description: description,
+    scale: resolution,
+    maxPixels: 1e13,
+    crs: projection.crs,
+    crsTransform: projection.transform, 
+    region: bwaoi,
+    //crs: 'EPSG:4326',
+   folder: 'EarthEngineExports'
+  })
+  
+  //Map.addLayer(image, {bands: 'SWIR2,NIR,RED', min: [0, 500, 200], max: [1800, 6000, 3500]}, 'image', false)
+  //Map.addLayer(classification, {min: 0, max: 4, palette: 'green,red'}, 'classification', true)
+}
+
+// function that gets most likely class
+function classifyPROB(classifier, date, resolution) {
+  var image = segmentToImage(segments.findByDate(date, 'closest'))
+  
+  var classification = image
+    .classify(classifier.setOutputMode('MULTIPROBABILITY'))
+    
+  var description = 'classification-prob-' + date
+  
+  print('classified image probability',classification)
+  
+  Map.addLayer(classification, {min: 0, max: 1, palette: 'green,red'}, 'classification probability', true)
+}
+
+// function that gets probability of a specific class
+function classifyPROBclass(classifier, date, resolution) {
+  var image = segmentToImage(segments.findByDate(date, 'closest'));
+  
+  var classification = image
+    .classify(classifier.setOutputMode('MULTIPROBABILITY'));
+    
+  var description = 'classification-prob-' + date;
+  
+  print('classified image probability',classification);
+  
+  Map.addLayer(classification, {min: 0, max: 1, palette: 'green,red'}, 'classification probability', true)
+}
+
+
+function annualSummary(imgStack,dateStart,dateEnd) {
+    var medImg = ee.Image(imgStack.filterDate(dateStart,dateEnd).reduce(ee.Reducer.median()));
+    var maxImg = ee.Image(imgStack.filterDate(dateStart,dateEnd).reduce(ee.Reducer.max()));
+    var minImg = ee.Image(imgStack.filterDate(dateStart,dateEnd).reduce(ee.Reducer.min()));
+    return medImg.addBands(maxImg).addBands(minImg)  
+}
+
+

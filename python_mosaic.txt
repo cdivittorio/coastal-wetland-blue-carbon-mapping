@@ -1,0 +1,29 @@
+import arcpy
+import os
+
+# Set the workspace
+workspace = "E:/Saeed/Coastwide_Classification/ws5_new/final_maps/geotif_grids"
+output_path = "E:/Saeed/Coastwide_Classification/ws5_new/final_maps/mosaiced_final"
+
+year_folders = os.listdir(workspace)
+
+# Iterate through each year folder
+for year_folder in os.listdir(workspace):
+    year_path = os.path.join(workspace, year_folder)
+
+    # Check if the path is a directory
+    if os.path.isdir(year_path):
+        arcpy.env.workspace = year_path
+        
+        # List all GeoTIFF files
+        geotiffs = arcpy.ListRasters("*", "TIF")
+
+        # Mosaic GeoTIFFs if any exist
+        if len(geotiffs) > 0:
+            output_mosaic = f"Mosaic_{year_folder}.tif"
+            arcpy.MosaicToNewRaster_management(geotiffs, output_path, output_mosaic, 
+                                               pixel_type="8_BIT_UNSIGNED", 
+                                               number_of_bands="1",
+					       mosaic_method="FIRST")
+
+
