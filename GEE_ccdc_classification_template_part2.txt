@@ -1,0 +1,1124 @@
+// This script using the imported training data and segements exported from previous script to 
+// classify the wetland area. This will be done on the sub-grid scale due to memory limitations
+// the output is a stack of images for each grid that provides the classification probability 
+// for each year and each class. The images will be processed in MATLAB to produce classification 
+// accuracy metrics.  
+
+// July 5th 2023
+
+// Updated Sept 11 for final run
+
+// Courtney Di Vittorio
+
+// training on remaining sites uses class labels 1 through 5
+
+// import another users' tools
+var temporalSegmentation = require('users/wiell/temporalSegmentation:temporalSegmentation')
+
+//import training data for your watershed - now using full training set - unchanged only
+var trainData = ee.FeatureCollection('projects/ee-louijl22/assets/trainingBARfull'); 
+
+
+// add each grid as a geometry variable  
+//////////////////////////////////////////// MODIFY FOR EACH WATERSHED ////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+// make sure grids outside of watershed are removed
+
+// Baratria shown below as example (watershed 8) 
+var gridr1c1 = ee.FeatureCollection(ee.Geometry.Rectangle(-91.4008,29.968,-91.1721,30.214));
+var gridr1c2 = ee.FeatureCollection(ee.Geometry.Rectangle(-91.1721,29.968,-90.9434,30.214));
+var gridr1c3 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.9434,29.968,-90.7147,30.214));
+var gridr1c4 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.7147,29.968,-90.486,30.214));
+var gridr1c5 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.486,29.968,-90.2574,30.214));
+
+var gridr2c1 = ee.FeatureCollection(ee.Geometry.Rectangle(-91.4008,29.7221,-91.1721,29.968));
+var gridr2c2 = ee.FeatureCollection(ee.Geometry.Rectangle(-91.1721,29.7221,-90.9434,29.968));
+var gridr2c3 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.9434,29.7221,-90.7147,29.968));
+var gridr2c4 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.7147,29.7221,-90.486,29.968));
+var gridr2c5 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.486,29.7221,-90.2574,29.968));
+var gridr2c6 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.2574,29.7221,-90.0287,29.968));
+var gridr2c7 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.0287,29.7221,-89.8,29.968));
+
+var gridr3c1 = ee.FeatureCollection(ee.Geometry.Rectangle(-91.4008,29.4761,-91.1721,29.7221));
+var gridr3c2 = ee.FeatureCollection(ee.Geometry.Rectangle(-91.1721,29.4761,-90.9434,29.7221));
+var gridr3c3 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.9434,29.4761,-90.7147,29.7221));
+var gridr3c4 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.7147,29.4761,-90.486,29.7221));
+var gridr3c5 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.486,29.4761,-90.2574,29.7221));
+var gridr3c6 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.2574,29.4761,-90.0287,29.7221));
+var gridr3c7 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.0287,29.4761,-89.8,29.7221));
+var gridr3c8 = ee.FeatureCollection(ee.Geometry.Rectangle(-89.8,29.4761,-89.5713,29.7221));
+var gridr3c9 = ee.FeatureCollection(ee.Geometry.Rectangle(-89.5713,29.4761,-89.3426,29.7221));
+
+var gridr4c1 = ee.FeatureCollection(ee.Geometry.Rectangle(-91.4008,29.2301,-91.1721,29.4761));
+var gridr4c2 = ee.FeatureCollection(ee.Geometry.Rectangle(-91.1721,29.2301,-90.9434,29.4761));
+var gridr4c3 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.9434,29.2301,-90.7147,29.4761));
+var gridr4c4 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.7147,29.2301,-90.486,29.4761));
+var gridr4c5 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.486,29.2301,-90.2574,29.4761));
+var gridr4c6 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.2574,29.2301,-90.0287,29.4761));
+var gridr4c7 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.0287,29.2301,-89.8,29.4761));
+var gridr4c8 = ee.FeatureCollection(ee.Geometry.Rectangle(-89.8,29.2301,-89.5713,29.4761));
+var gridr4c9 = ee.FeatureCollection(ee.Geometry.Rectangle(-89.5713,29.2301,-89.3426,29.4761));
+
+var gridr5c1 = ee.FeatureCollection(ee.Geometry.Rectangle(-91.4008,28.9842,-91.1721,29.2301));
+var gridr5c2 = ee.FeatureCollection(ee.Geometry.Rectangle(-91.1721,28.9842,-90.9434,29.2301));
+var gridr5c3 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.9434,28.9842,-90.7147,29.2301));
+var gridr5c4 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.7147,28.9842,-90.486,29.2301));
+var gridr5c5 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.486,28.9842,-90.2574,29.2301));
+var gridr5c6 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.2574,28.9842,-90.0287,29.2301));
+var gridr5c7 = ee.FeatureCollection(ee.Geometry.Rectangle(-90.0287,28.9842,-89.8,29.2301));
+var gridr5c8 = ee.FeatureCollection(ee.Geometry.Rectangle(-89.8,28.9842,-89.5713,29.2301));
+var gridr5c9 = ee.FeatureCollection(ee.Geometry.Rectangle(-89.5713,28.9842,-89.3426,29.2301));
+
+// create a merged grid 
+////////////////////////////////////////////////////////// MODIFY FOR EACH WATERSHED ////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+var gridMerge = gridr1c1.merge(gridr1c2).merge(gridr1c3).merge(gridr1c4).merge(gridr1c5)
+  .merge(gridr2c1).merge(gridr2c2).merge(gridr2c3).merge(gridr2c4).merge(gridr2c5).merge(gridr2c6).merge(gridr2c7)
+  .merge(gridr3c1).merge(gridr3c2).merge(gridr3c3).merge(gridr3c4).merge(gridr3c5).merge(gridr3c6).merge(gridr3c7).merge(gridr3c8)
+  .merge(gridr4c1).merge(gridr4c2).merge(gridr4c3).merge(gridr4c4).merge(gridr4c5).merge(gridr4c6).merge(gridr4c7).merge(gridr4c8).merge(gridr4c9)
+  .merge(gridr5c1).merge(gridr5c2).merge(gridr5c3).merge(gridr5c4).merge(gridr5c5).merge(gridr5c6).merge(gridr5c7).merge(gridr5c8).merge(gridr5c9);
+
+gridMerge = gridMerge.geometry();
+
+Map.centerObject(gridMerge);
+Map.addLayer(gridMerge,{color: 'red'},'Barataria Grids');
+
+
+// Filter training data by grid 
+///////////////////////////////////MODIFY FOR EACH WATERSHED //////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// COMMENT OUT GRIDS THAT DO NOT HAVE TRAINING DATA 
+
+var trainData11 = trainData.filterBounds(gridr1c1);
+var trainData12 = trainData.filterBounds(gridr1c2);
+var trainData13 = trainData.filterBounds(gridr1c3);
+var trainData14 = trainData.filterBounds(gridr1c4);
+var trainData15 = trainData.filterBounds(gridr1c5);
+
+var trainData21 = trainData.filterBounds(gridr2c1);
+var trainData22 = trainData.filterBounds(gridr2c2);
+var trainData23 = trainData.filterBounds(gridr2c3);
+var trainData24 = trainData.filterBounds(gridr2c4);
+var trainData25 = trainData.filterBounds(gridr2c5);
+var trainData26 = trainData.filterBounds(gridr2c6);
+var trainData27 = trainData.filterBounds(gridr2c7);
+
+var trainData31 = trainData.filterBounds(gridr3c1);
+var trainData32 = trainData.filterBounds(gridr3c2);
+var trainData33 = trainData.filterBounds(gridr3c3);
+var trainData34 = trainData.filterBounds(gridr3c4);
+var trainData35 = trainData.filterBounds(gridr3c5);
+var trainData36 = trainData.filterBounds(gridr3c6);
+var trainData37 = trainData.filterBounds(gridr3c7);
+var trainData38 = trainData.filterBounds(gridr3c8);
+
+var trainData41 = trainData.filterBounds(gridr4c1);
+var trainData42 = trainData.filterBounds(gridr4c2);
+var trainData43 = trainData.filterBounds(gridr4c3);
+var trainData44 = trainData.filterBounds(gridr4c4);
+var trainData45 = trainData.filterBounds(gridr4c5);
+var trainData46 = trainData.filterBounds(gridr4c6);
+var trainData47 = trainData.filterBounds(gridr4c7);
+var trainData48 = trainData.filterBounds(gridr4c8);
+var trainData49 = trainData.filterBounds(gridr4c9);
+
+var trainData51 = trainData.filterBounds(gridr5c1);
+var trainData52 = trainData.filterBounds(gridr5c2);
+var trainData53 = trainData.filterBounds(gridr5c3);
+var trainData54 = trainData.filterBounds(gridr5c4);
+var trainData55 = trainData.filterBounds(gridr5c5);
+var trainData56 = trainData.filterBounds(gridr5c6);
+var trainData57 = trainData.filterBounds(gridr5c7);
+var trainData58 = trainData.filterBounds(gridr5c8);
+var trainData59 = trainData.filterBounds(gridr5c9);
+
+// Import segments as image from asset 
+///////////////////////////////////////// MODIFY FOR EACH WATERSHED  ////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+var segmentsImage11 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r1c1');
+var segmentsImage12 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r1c2');
+var segmentsImage13 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r1c3');
+var segmentsImage14 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r1c4');
+var segmentsImage15 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r1c5');
+
+var segmentsImage21 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r2c1');
+var segmentsImage22 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r2c2');
+var segmentsImage23 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r2c3');
+var segmentsImage24 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r2c4');
+var segmentsImage25 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r2c5');
+var segmentsImage26 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r2c6');
+var segmentsImage27 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r2c7');
+
+var segmentsImage31 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r3c1');
+var segmentsImage32 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r3c2');
+var segmentsImage33 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r3c3');
+var segmentsImage34 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r3c4');
+var segmentsImage35 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r3c5');
+var segmentsImage36 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r3c6');
+var segmentsImage37 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r3c7');
+var segmentsImage38 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r3c8');
+
+
+var segmentsImage41 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r4c1');
+var segmentsImage42 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r4c2');
+var segmentsImage43 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r4c3');
+var segmentsImage44 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r4c4');
+var segmentsImage45 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r4c5');
+var segmentsImage46 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r4c6');
+var segmentsImage47 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r4c7');
+var segmentsImage48 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r4c8');
+var segmentsImage49 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r4c9');
+
+var segmentsImage51 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r5c1');
+var segmentsImage52 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r5c2');
+var segmentsImage53 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r5c3');
+var segmentsImage54 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r5c4');
+var segmentsImage55 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r5c5');
+var segmentsImage56 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r5c6');
+var segmentsImage57 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r5c7');
+var segmentsImage58 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r5c8');
+var segmentsImage59 = ee.Image('projects/ee-louijl22/assets/ws8/segments_w8r5c9');
+
+
+///////////////////////////////////////////////// MODIFY FOR EACH WATERSHED /////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+var segments11 = temporalSegmentation.Segments(segmentsImage11);
+var segments12 = temporalSegmentation.Segments(segmentsImage12);
+var segments13 = temporalSegmentation.Segments(segmentsImage13);
+var segments14 = temporalSegmentation.Segments(segmentsImage14);
+var segments15 = temporalSegmentation.Segments(segmentsImage15);
+
+var segments21 = temporalSegmentation.Segments(segmentsImage21);
+var segments22 = temporalSegmentation.Segments(segmentsImage22);
+var segments23 = temporalSegmentation.Segments(segmentsImage23);
+var segments24 = temporalSegmentation.Segments(segmentsImage24);
+var segments25 = temporalSegmentation.Segments(segmentsImage25);
+var segments26 = temporalSegmentation.Segments(segmentsImage26);
+var segments27 = temporalSegmentation.Segments(segmentsImage27);
+
+var segments31 = temporalSegmentation.Segments(segmentsImage31);
+var segments32 = temporalSegmentation.Segments(segmentsImage32);
+var segments33 = temporalSegmentation.Segments(segmentsImage33);
+var segments34 = temporalSegmentation.Segments(segmentsImage34);
+var segments35 = temporalSegmentation.Segments(segmentsImage35);
+var segments36 = temporalSegmentation.Segments(segmentsImage36);
+var segments37 = temporalSegmentation.Segments(segmentsImage37);
+var segments38 = temporalSegmentation.Segments(segmentsImage38);
+
+var segments41 = temporalSegmentation.Segments(segmentsImage41);
+var segments42 = temporalSegmentation.Segments(segmentsImage42);
+var segments43 = temporalSegmentation.Segments(segmentsImage43);
+var segments44 = temporalSegmentation.Segments(segmentsImage44);
+var segments45 = temporalSegmentation.Segments(segmentsImage45);
+var segments46 = temporalSegmentation.Segments(segmentsImage46);
+var segments47 = temporalSegmentation.Segments(segmentsImage47);
+var segments48 = temporalSegmentation.Segments(segmentsImage48);
+var segments49 = temporalSegmentation.Segments(segmentsImage49);
+
+var segments51 = temporalSegmentation.Segments(segmentsImage51);
+var segments52 = temporalSegmentation.Segments(segmentsImage52);
+var segments53 = temporalSegmentation.Segments(segmentsImage53);
+var segments54 = temporalSegmentation.Segments(segmentsImage54);
+var segments55 = temporalSegmentation.Segments(segmentsImage55);
+var segments56 = temporalSegmentation.Segments(segmentsImage56);
+var segments57 = temporalSegmentation.Segments(segmentsImage57);
+var segments58 = temporalSegmentation.Segments(segmentsImage58);
+var segments59 = temporalSegmentation.Segments(segmentsImage59);
+
+
+// extract segments for training locations 
+/////// MODIFY FOR EACH WATERSHED, MAKE SURE GRIDS WITH NO TRAINING DATA REMOVED 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+var trainingData11 = sample(segments11, trainData11, 30);
+var trainingData12 = sample(segments12, trainData12, 30);
+var trainingData13 = sample(segments13, trainData13, 30);
+var trainingData14 = sample(segments14, trainData14, 30);
+var trainingData15 = sample(segments15, trainData15, 30);
+
+var trainingData21 = sample(segments21, trainData21, 30);
+var trainingData22 = sample(segments22, trainData22, 30);
+var trainingData23 = sample(segments23, trainData23, 30);
+var trainingData24 = sample(segments24, trainData24, 30);
+var trainingData25 = sample(segments25, trainData25, 30);
+var trainingData26 = sample(segments26, trainData26, 30);
+var trainingData27 = sample(segments27, trainData27, 30);
+
+var trainingData31 = sample(segments31, trainData31, 30);
+var trainingData32 = sample(segments32, trainData32, 30);
+var trainingData33 = sample(segments33, trainData33, 30);
+var trainingData34 = sample(segments34, trainData34, 30);
+var trainingData35 = sample(segments35, trainData35, 30);
+var trainingData36 = sample(segments36, trainData36, 30);
+var trainingData37 = sample(segments37, trainData37, 30);
+var trainingData38 = sample(segments38, trainData38, 30);
+
+var trainingData41 = sample(segments41, trainData41, 30);
+var trainingData42 = sample(segments42, trainData42, 30);
+var trainingData43 = sample(segments43, trainData43, 30);
+var trainingData44 = sample(segments44, trainData44, 30);
+var trainingData45 = sample(segments45, trainData45, 30);
+var trainingData46 = sample(segments46, trainData46, 30);
+var trainingData47 = sample(segments47, trainData47, 30);
+var trainingData48 = sample(segments48, trainData48, 30);
+var trainingData49 = sample(segments49, trainData49, 30);
+
+var trainingData51 = sample(segments51, trainData51, 30);
+var trainingData52 = sample(segments52, trainData52, 30);
+var trainingData53 = sample(segments53, trainData53, 30);
+var trainingData54 = sample(segments54, trainData54, 30);
+var trainingData55 = sample(segments55, trainData55, 30);
+var trainingData56 = sample(segments56, trainData56, 30);
+var trainingData57 = sample(segments57, trainData57, 30);
+var trainingData58 = sample(segments58, trainData58, 30);
+var trainingData59 = sample(segments59, trainData59, 30);
+
+
+// Merge all training data together for classification 
+/////////////////////////// MODIFY FOR EACH WATERSHED ///////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+var trainingData = trainingData11.merge(trainingData12).merge(trainingData13).merge(trainingData14).merge(trainingData15)
+  .merge(trainingData21).merge(trainingData22).merge(trainingData23).merge(trainingData24).merge(trainingData25)
+  .merge(trainingData26).merge(trainingData27)
+  .merge(trainingData31).merge(trainingData32).merge(trainingData33).merge(trainingData34).merge(trainingData35)
+  .merge(trainingData36).merge(trainingData37).merge(trainingData38)
+  .merge(trainingData41).merge(trainingData42).merge(trainingData43).merge(trainingData44).merge(trainingData45)
+  .merge(trainingData46).merge(trainingData47).merge(trainingData48).merge(trainingData49)
+  .merge(trainingData51).merge(trainingData52).merge(trainingData53).merge(trainingData54).merge(trainingData55)
+  .merge(trainingData56).merge(trainingData57).merge(trainingData58).merge(trainingData59)
+
+
+// remove some of features from training before classification if they are not being used in classification
+var trainingData1 = trainingData.first();
+//print('subset 1',trainingData1)
+var inputFeatures = trainingData1.propertyNames();
+//print('inputFeatures',inputFeatures)
+
+var inputFeaturesRed = inputFeatures.remove('type')
+var inputFeaturesRed = inputFeaturesRed.remove('system:index')
+var inputFeaturesRed = inputFeaturesRed.remove('random')
+var inputFeaturesRed = inputFeaturesRed.remove('train')
+//print('inputFeaturesRed',inputFeaturesRed)
+
+
+// remove BRIGHTNESS, BRIGHTNESS_rmse, GREENESS, GREENESS_rmse, GV, GV_rmse,
+// NBR, NBR_rmse, NDFI, NDFI_rmse, NPV, NPV_rmse, Shade, Shade_rmse, Soil, Soil_rmse, 
+// TEMP, TEMP_rmse, WETNESS, WETNESS_rmse, densityObs 
+// many of these are remnants from another user's code
+var inputFeaturesRed = inputFeaturesRed.remove('BRIGHTNESS_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('GREENESS_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('WETNESS_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('GV_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('NBR_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('TEMP_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('Shade_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('densityObs')
+var inputFeaturesRed = inputFeaturesRed.remove('Soil_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('NDFI_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('NPV_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('EVI2_rmse')
+var inputFeaturesRed = inputFeaturesRed.remove('BLUE_rmse') 
+// visually check that they are removed
+//print('inputFeaturesRed 2',inputFeaturesRed)
+
+var classifier = ee.Classifier.smileRandomForest(150) //number of trees 
+ 
+// function that creates classified image on 2018-01-01 and outputs to drive
+
+// variable that determines class
+var classProperty = 'type';
+
+// Train the classifier 
+var trainedModel = classifier.train({
+    features: trainingData,
+    classProperty: classProperty,
+    inputProperties: inputFeaturesRed
+  })
+
+
+
+////////////////////////////////////////////////////// CHANGE GRID NUMBER HERE - NEED TO EXPORT 1-At-A-TIME
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// have to export for 1 grid at time, but using training data from entire watershed
+var segments = segments11;
+var gridproc = gridr1c1;
+
+// descriptions for export /////////////////////////// CHANGE CV NUM FOR EACH ITERATION ///////////////
+var gridnum = 'g11';
+
+
+// feature importance - export chart to CSV for at least 5 grids 
+var featImp = trainedModel.explain();
+var variable_importance = ee.Feature(null, ee.Dictionary(featImp).get('importance'));
+var descriptionOut2 = 'featureImportance-' + gridnum 
+// convert to feature collection for export
+var varImpt2 = ee.FeatureCollection(variable_importance)
+// Export the image sample feature collection to Drive as a CSV file.
+Export.table.toDrive({
+  collection: varImpt2,
+  description: descriptionOut2,
+  folder: 'EarthEngineExports',
+  fileFormat: 'CSV'
+});
+
+
+
+// Export all dates from 1985 to 2023 to 1 file - DO NOT need to change this part
+
+// 1st date
+var date = '1985-07-01';
+// Get image of predictors for date of interest
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+// use function to get classification probabilities
+var classificationProbsImgs = classify(image, trainedModel)
+// print 1st date to make sure it is working
+//print('classification probabilities',classificationProbsImgs)
+// select variables we want to export and rename so date is recorded
+var classificationProbsImgsRed96 = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+
+// NEXT YEAR
+var date = '1986-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsRed97 = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = classificationProbsImgsRed96.addBands(classificationProbsImgsRed97,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '1987-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+
+// NEXT YEAR
+var date = '1988-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+
+// NEXT YEAR
+var date = '1989-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '1990-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])    
+
+// NEXT YEAR
+var date = '1991-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+
+// NEXT YEAR
+var date = '1992-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '1993-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])   
+     
+// NEXT YEAR
+var date = '1994-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])     
+
+// NEXT YEAR
+var date = '1995-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '1996-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '1997-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '1998-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '1999-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2000-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2001-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2002-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+          
+// NEXT YEAR
+var date = '2003-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2004-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+
+// NEXT YEAR
+var date = '2005-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2006-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+               
+// NEXT YEAR
+var date = '2007-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+          
+// NEXT YEAR
+var date = '2008-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2009-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+          
+// NEXT YEAR
+var date = '2010-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+ 
+// NEXT YEAR
+var date = '2011-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2012-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2013-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+
+// NEXT YEAR
+var date = '2014-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2015-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+
+// NEXT YEAR
+var date = '2016-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+
+// NEXT YEAR
+var date = '2017-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+     
+// NEXT YEAR
+var date = '2018-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+
+// NEXT YEAR
+var date = '2019-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2020-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+// NEXT YEAR
+var date = '2021-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+
+// NEXT YEAR
+var date = '2022-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+
+// NEXT YEAR
+var date = '2023-07-01';
+var image = segmentToImage(segments.findByDate(date, 'closest'))
+var classificationProbsImgs = classify(image, trainedModel)
+var classificationProbsImgsAdd = classificationProbsImgs.select(['class_probability',
+     'probability_1','probability_2','probability_3','probability_4','probability_5'])
+     .rename(['class_probability_'+date,
+     'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date]);
+
+// combine with previous
+var ImageComb = ImageComb.addBands(classificationProbsImgsAdd,
+     ['class_probability_'+date,'probability_1_'+date,'probability_2_'+date,'probability_3_'+date,
+     'probability_4_'+date,'probability_5_'+date])
+     
+     
+/////////////////////////////////// Now export ////////////////////////////////////////////////////                                      
+var descriptionOut = 'classificationProbs-'  + gridnum
+
+Export.image.toDrive({
+  //Export.image.toAsset({
+    image: ImageComb,
+    description: descriptionOut,
+    scale: 30,
+    maxPixels: 1e13,
+    region: gridproc,
+    //crs: projection.crs,
+    //crsTransform: projection.transform, 
+    crs: 'EPSG:4326',
+    folder: 'EarthEngineExports' ///////////////// ADD YOUR GOOGLE DRIVE FOLDER NAME HERE /////////////////////////
+  })     
+
+
+// function that converts segment to image - //////////// MODIFY WHEN CHANGING BANDS //////////////////////////////
+function segmentToImage(segment) {
+  var image = segment.toImage() 
+  var rmse = image.select('.*_rmse')
+  //var ndfiCoefs = segment.coefs('ndfi')
+  //add band coefs as well
+  //bands
+  //var blueCoefs = segment.coefs('BLUE')
+  var greenCoefs = segment.coefs('GREEN')  
+  var redCoefs = segment.coefs('RED')
+  var nirCoefs = segment.coefs('NIR')
+  var swir1Coefs = segment.coefs('SWIR1')
+  var swir2Coefs = segment.coefs('SWIR2')
+  // indices
+  var ndviCoefs = segment.coefs('NDVI')
+  var mndwiCoefs = segment.coefs('MNDWI')
+  
+  var ndwiCoefs = segment.coefs('NDWIa')
+  var aewCoefs = segment.coefs('AEWInsh')
+  var bsiCoefs = segment.coefs('BSI')
+  var eviCoefs = segment.coefs('EVI')
+  var npcriCoefs = segment.coefs('NPCRI')
+  
+  //var slice = segment.slice({strategy: 'closest'}) // I think this is value on closest date, try removing
+  //var normalizedDifferences = segments.combinePairwise(slice, normalizedDifference, '_nd')
+  var densityObs = image.expression('i.numObs / (i.tEnd - i.tStart)', {i: image})
+    .rename('densityObs')
+  return ee.Image([rmse, greenCoefs, redCoefs, nirCoefs, swir1Coefs, swir2Coefs, 
+    ndviCoefs, mndwiCoefs, ndwiCoefs, aewCoefs, 
+    bsiCoefs, eviCoefs, npcriCoefs, densityObs])
+  //return ee.Image([rmse, blueCoefs, greenCoefs, redCoefs, nirCoefs, swir1Coefs, swir2Coefs, 
+  //ndviCoefs, mndwiCoefs, densityObs])
+}
+
+// function that calculates normalized differences
+function normalizedDifference(img1, img2) {
+  return img1.expression('(img1 - img2) / (img1 + img2)', {
+    img1: img1, 
+    img2: img2
+  })
+}
+
+// function that samples training data from image
+function sample(segments, referenceData, resolution) {
+  var trainingData = referenceData.map(sampleFeature).flatten()
+  var bandOrder = trainingData.first().propertyNames().slice(1)
+  return trainingData.set('band_order', bandOrder)
+  
+  // for each training point
+  function sampleFeature(feature) {
+    var segment = segments.findByDate(ee.Date(feature.get('date')), 'closest')
+    return segmentToImage(segment)
+      .sample({
+        region: feature.geometry(),
+        scale: resolution,
+        numPixels: 1
+      })
+      .map(
+        function (sample) {
+          return ee.Feature(sample)
+            .copyProperties({
+              source: ee.Feature(feature), 
+              exclude: ['date'] //took out to export and correct GEE training info
+            })
+        }
+      )
+  }
+}
+
+// function that reads in image of predictors for a particular date, 
+// gets classification probability for class it was classified to, 
+function classify(image, classifier) {
+  var classes = ee.Array(classifier.explain().get('classes'))
+  var multiProbability = image.classify(classifier.setOutputMode('MULTIPROBABILITY'))
+  var classProbability = multiProbability
+    .arrayReduce(ee.Reducer.max(), [0])
+    .arrayFlatten([
+      ['class_probability']
+    ])
+  var classValue = ee.Image(classes)
+    .arrayMask(multiProbability.eq(classProbability))
+    .arrayFlatten([
+      ['class']
+    ])
+  var probabilityBandNames = classes
+    .toList()
+    .map(function(classValue) {
+      return ee.String('probability_').cat(ee.Number(classValue).format())
+    })
+  var probabilities = multiProbability.arrayFlatten([probabilityBandNames])
+  return classValue
+    .addBands(classProbability)
+    .addBands(probabilities)
+}
+
+function classifySimple(classifier, date, resolution) {
+  var image = segmentToImage(segments.findByDate(date, 'closest'))
+  
+  var classification = image
+    .classify(classifier.setOutputMode('CLASSIFICATION'))
+    
+  var description = 'classification-' + date
+  
+  print('classified image',classification)
+  
+  var projection = classificationProbsImgsRed.select(0).projection().getInfo();
+  //print('projection info',projection)
+  Export.image.toDrive({
+  //Export.image.toAsset({
+    image: classification,
+    description: description,
+    scale: resolution,
+    maxPixels: 1e13,
+    crs: projection.crs,
+    crsTransform: projection.transform, 
+    region: bwaoi,
+    //crs: 'EPSG:4326',
+   folder: 'EarthEngineExports'
+  })
+  
+  //Map.addLayer(image, {bands: 'SWIR2,NIR,RED', min: [0, 500, 200], max: [1800, 6000, 3500]}, 'image', false)
+  //Map.addLayer(classification, {min: 0, max: 4, palette: 'green,red'}, 'classification', true)
+}
+
+// function that gets most likely class
+function classifyPROB(classifier, date, resolution) {
+  var image = segmentToImage(segments.findByDate(date, 'closest'))
+  
+  var classification = image
+    .classify(classifier.setOutputMode('MULTIPROBABILITY'))
+    
+  var description = 'classification-prob-' + date
+  
+  print('classified image probability',classification)
+  
+  Map.addLayer(classification, {min: 0, max: 1, palette: 'green,red'}, 'classification probability', true)
+}
+
+// function that gets probability of a specific class
+function classifyPROBclass(classifier, date, resolution) {
+  var image = segmentToImage(segments.findByDate(date, 'closest'));
+  
+  var classification = image
+    .classify(classifier.setOutputMode('MULTIPROBABILITY'));
+    
+  var description = 'classification-prob-' + date;
+  
+  print('classified image probability',classification);
+  
+  Map.addLayer(classification, {min: 0, max: 1, palette: 'green,red'}, 'classification probability', true)
+}

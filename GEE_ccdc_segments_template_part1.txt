@@ -1,0 +1,121 @@
+// This script creates an ImageCollection of Landsat scenes, runs CCDC, then exports 
+// segments as images so they can be used later in the classification. To accomodate memory 
+// limitations a watershed is split up into sub-grids that are run one-at-a-time
+
+// Courtney DiVittorio
+// July 5th 2023
+
+// Note: If a grid contains 3 overlapping landsat tiles, then will likely 
+// run into memory issues. So for grids that do not run, assess whether there are
+// 3 overlapping tiles and modify landsat mosaicing 
+
+
+///////// PASTE SUBGRID LAT/LON FROM TXT FILE HERE //////////////////
+////////////// MODIFY FOR EACH WATERSHED ///////
+// NOTE: example from Barataria (watershed 8) shown for 1st grid
+// run each grid one-at-a-time
+var gridr1c1 = ee.Geometry.Rectangle(-91.4008,29.968,-91.1721,30.214);
+//var gridr1c2 = ee.Geometry.Rectangle(-91.1721,29.968,-90.9434,30.214);
+//var gridr1c3 = ee.Geometry.Rectangle(-90.9434,29.968,-90.7147,30.214);
+//var gridr1c4 = ee.Geometry.Rectangle(-90.7147,29.968,-90.486,30.214);
+//var gridr1c5 = ee.Geometry.Rectangle(-90.486,29.968,-90.2574,30.214);
+//var gridr1c6 = ee.Geometry.Rectangle(-90.2574,29.968,-90.0287,30.214);
+//var gridr1c7 = ee.Geometry.Rectangle(-90.0287,29.968,-89.8,30.214);
+//var gridr1c8 = ee.Geometry.Rectangle(-89.8,29.968,-89.5713,30.214);
+//var gridr1c9 = ee.Geometry.Rectangle(-89.5713,29.968,-89.3426,30.214);
+//var gridr2c1 = ee.Geometry.Rectangle(-91.4008,29.7221,-91.1721,29.968);
+//var gridr2c2 = ee.Geometry.Rectangle(-91.1721,29.7221,-90.9434,29.968);
+//var gridr2c3 = ee.Geometry.Rectangle(-90.9434,29.7221,-90.7147,29.968);
+//var gridr2c4 = ee.Geometry.Rectangle(-90.7147,29.7221,-90.486,29.968);
+//var gridr2c5 = ee.Geometry.Rectangle(-90.486,29.7221,-90.2574,29.968);
+//var gridr2c6 = ee.Geometry.Rectangle(-90.2574,29.7221,-90.0287,29.968);
+//var gridr2c7 = ee.Geometry.Rectangle(-90.0287,29.7221,-89.8,29.968);
+//var gridr2c8 = ee.Geometry.Rectangle(-89.8,29.7221,-89.5713,29.968);
+//var gridr2c9 = ee.Geometry.Rectangle(-89.5713,29.7221,-89.3426,29.968);
+//var gridr3c1 = ee.Geometry.Rectangle(-91.4008,29.4761,-91.1721,29.7221);
+//var gridr3c2 = ee.Geometry.Rectangle(-91.1721,29.4761,-90.9434,29.7221);
+//var gridr3c3 = ee.Geometry.Rectangle(-90.9434,29.4761,-90.7147,29.7221);
+//var gridr3c4 = ee.Geometry.Rectangle(-90.7147,29.4761,-90.486,29.7221);
+//var gridr3c5 = ee.Geometry.Rectangle(-90.486,29.4761,-90.2574,29.7221);
+//var gridr3c6 = ee.Geometry.Rectangle(-90.2574,29.4761,-90.0287,29.7221);
+//var gridr3c7 = ee.Geometry.Rectangle(-90.0287,29.4761,-89.8,29.7221);
+//var gridr3c8 = ee.Geometry.Rectangle(-89.8,29.4761,-89.5713,29.7221);
+//var gridr3c9 = ee.Geometry.Rectangle(-89.5713,29.4761,-89.3426,29.7221);
+//var gridr4c1 = ee.Geometry.Rectangle(-91.4008,29.2301,-91.1721,29.4761);
+//var gridr4c2 = ee.Geometry.Rectangle(-91.1721,29.2301,-90.9434,29.4761);
+//var gridr4c3 = ee.Geometry.Rectangle(-90.9434,29.2301,-90.7147,29.4761);
+//var gridr4c4 = ee.Geometry.Rectangle(-90.7147,29.2301,-90.486,29.4761);
+//var gridr4c5 = ee.Geometry.Rectangle(-90.486,29.2301,-90.2574,29.4761);
+//var gridr4c6 = ee.Geometry.Rectangle(-90.2574,29.2301,-90.0287,29.4761);
+//var gridr4c7 = ee.Geometry.Rectangle(-90.0287,29.2301,-89.8,29.4761);
+//var gridr4c8 = ee.Geometry.Rectangle(-89.8,29.2301,-89.5713,29.4761);
+//var gridr4c9 = ee.Geometry.Rectangle(-89.5713,29.2301,-89.3426,29.4761);
+//var gridr5c1 = ee.Geometry.Rectangle(-91.4008,28.9842,-91.1721,29.2301);
+//var gridr5c2 = ee.Geometry.Rectangle(-91.1721,28.9842,-90.9434,29.2301);
+//var gridr5c3 = ee.Geometry.Rectangle(-90.9434,28.9842,-90.7147,29.2301);
+//var gridr5c4 = ee.Geometry.Rectangle(-90.7147,28.9842,-90.486,29.2301);
+//var gridr5c5 = ee.Geometry.Rectangle(-90.486,28.9842,-90.2574,29.2301);
+//var gridr5c6 = ee.Geometry.Rectangle(-90.2574,28.9842,-90.0287,29.2301);
+//var gridr5c7 = ee.Geometry.Rectangle(-90.0287,28.9842,-89.8,29.2301);
+//var gridr5c8 = ee.Geometry.Rectangle(-89.8,28.9842,-89.5713,29.2301);
+//var gridr5c9 = ee.Geometry.Rectangle(-89.5713,28.9842,-89.3426,29.2301);
+
+
+// rename grid so do not have to change variable later on in code 
+////////////////////// MODIFY ROW AND COLUMN FOR EACH GRID //////////////
+/////////////////////// WILL VARY FOR EACH WATERSHED ///////////////////////
+var gridproc = gridr1c1;
+
+
+// center map so can visualize grid
+Map.centerObject(gridproc);
+Map.addLayer(gridproc,{color: 'red'},'Grid To Process');
+
+// create name to save - 
+////////////////////////////////// MODIFY ROW AND COLUMN IN NAME FOR EACH GRID /////////
+////////////////////////////////////////////////////////////////////////////////////////
+var descriptionOut = 'segments_w8r1c1';
+
+//pull in tools from another GEE user
+var temporalSegmentation = require('users/wiell/temporalSegmentation:temporalSegmentation')
+
+// use my modified tools for creating a landsat collection 
+var utils = require('users/cdivittorio/ccdcUtilsModified:ccdcUtilities/api');
+
+
+// create parameters for getLandsat 
+var landsatParams = {
+  collection: 2,
+  start: '1984-01-01',
+  end: '2023-09-11',
+  StudyRegion: gridproc
+}
+
+// get landsat image collection for study region using my code
+var filteredLandsat = utils.Inputs.getLandsat(landsatParams) 
+    .filterBounds(landsatParams.StudyRegion)
+    .filterDate(landsatParams.start, landsatParams.end)
+
+// parameterize ccdc break point detection
+var ccdc = ee.Algorithms.TemporalSegmentation.Ccdc({
+  collection: filteredLandsat, 
+  breakpointBands: ['GREEN','RED','NIR','SWIR1','SWIR2','NDVI','NDWIa','MNDWI','NPCRI','BSI','EVI','AEWInsh'], // all bands and indices
+  tmaskBands: ['GREEN','SWIR2'],
+  minObservations: 6,
+  chiSquareProbability: .97, 
+  minNumOfYearsScaler: 1.33,
+  //dateFormat: 1, //2 specifies Unix time. Fractional years - 1, or Julian days - 0. O is default value
+  lambda: 20/10000, //divide by 10000 b/c of digital number
+  maxIterations: 25000  // default 
+})
+
+var segments = temporalSegmentation.Segments(ccdc) //, 0, 12) //2nd entry is date format (chose fract years) 3rd is max segments - need this for some grids
+
+// export segment as asset
+segments.toAsset({
+  description: descriptionOut,
+  region: gridproc,
+  scale: 30, 
+  crs: 'EPSG:4326'
+})
+
